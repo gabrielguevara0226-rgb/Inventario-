@@ -1,548 +1,590 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Control de Inventario - Camisas Deportivas</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* Estilos generales minimalistas */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+      /* Estilos generales minimalistas */
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        color: #333;
+        margin: 0;
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .container {
+        background-color: #ffffff;
+        border: 1px solid #ccc;
+        padding: 20px;
+        width: 100%;
+        max-width: 800px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+      h1,
+      h2 {
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+        margin-top: 0;
+      }
+      .form-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+      .form-group input,
+      .form-group select {
+        padding: 8px;
+        border: 1px solid #aaa;
+        flex: 1;
+        min-width: 110px;
+      }
+      button {
+        padding: 8px 15px;
+        background-color: #333;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+      }
+      button:hover {
+        background-color: #555;
+      }
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      button.btn-vender {
+        background-color: #666;
+        font-size: 0.9em;
+      }
+      button.btn-eliminar {
+        background-color: #999;
+        font-size: 0.9em;
+      }
+      button.btn-limpiar {
+        background-color: #fff;
+        color: #333;
+        border: 1px solid #ccc;
+        margin-top: 10px;
+        font-size: 0.85em;
+      }
+      button.btn-limpiar:hover {
+        background-color: #eee;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      th,
+      td {
+        border: 1px solid #ddd;
+        padding: 10px;
+        text-align: left;
+        vertical-align: middle;
+      }
+      th {
+        background-color: #eaeaea;
+      }
+      .tabla-pequena {
+        width: 50%;
+        min-width: 300px;
+        margin-bottom: 10px;
+      }
+      .fila-grupo {
+        background-color: #f9f9f9;
+        cursor: pointer;
+        font-weight: bold;
+        transition: background-color 0.2s;
+      }
+      .fila-grupo:hover {
+        background-color: #e0e0e0;
+      }
+      .icono-toggle {
+        float: right;
+        color: #666;
+        font-size: 0.9em;
+      }
+      .celda-vacia {
+        color: #aaa;
+        text-align: center;
+        width: 30px;
+      }
+      .etiqueta-ubicacion {
+        font-size: 0.85em;
+        background-color: #eee;
+        padding: 3px 6px;
+        border-radius: 3px;
+        color: #555;
+      }
+      .acciones {
+        display: flex;
+        gap: 5px;
+      }
+      .sin-stock {
+        color: #777;
+        font-style: italic;
+      }
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        justify-content: center;
+        align-items: center;
+      }
+      .modal-content {
+        background-color: #fff;
+        padding: 25px;
+        border: 1px solid #888;
+        width: 90%;
+        max-width: 350px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        position: relative;
+      }
+      .modal-content h3 {
+        margin-top: 0;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+      }
+      .close-btn {
+        position: absolute;
+        top: 10px;
+        right: 15px;
+        color: #aaa;
+        font-size: 24px;
+        font-weight: bold;
+        cursor: pointer;
+      }
+      .close-btn:hover {
+        color: #333;
+      }
+      .modal-form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 15px;
+      }
+      .modal-form-group input {
+        padding: 8px;
+        border: 1px solid #aaa;
+      }
+      .fecha-venta {
+        font-size: 0.9em;
+        color: #555;
+      }
 
-        .container {
-            background-color: #ffffff;
-            border: 1px solid #ccc;
-            padding: 20px;
-            width: 100%;
-            max-width: 800px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-
-        h1, h2 {
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-            margin-top: 0;
-        }
-
-        .form-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-        }
-
-        .form-group input, .form-group select {
-            padding: 8px;
-            border: 1px solid #aaa;
-            flex: 1;
-            min-width: 110px;
-        }
-
-        button {
-            padding: 8px 15px;
-            background-color: #333;
-            color: #fff;
-            border: none;
-            cursor: pointer;
-        }
-
-        button:hover {
-            background-color: #555;
-        }
-
-        button.btn-vender {
-            background-color: #666;
-            font-size: 0.9em;
-        }
-
-        button.btn-eliminar {
-            background-color: #999;
-            font-size: 0.9em;
-        }
-
-        button.btn-limpiar {
-            background-color: #fff;
-            color: #333;
-            border: 1px solid #ccc;
-            margin-top: 10px;
-            font-size: 0.85em;
-        }
-
-        button.btn-limpiar:hover {
-            background-color: #eee;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-            vertical-align: middle;
-        }
-
-        th {
-            background-color: #eaeaea;
-        }
-
-        /* Tabla resumen superior */
-        .tabla-pequena {
-            width: 50%;
-            min-width: 300px;
-            margin-bottom: 10px;
-        }
-
-        /* Estilos para el Acordeón / Pestañas */
-        .fila-grupo {
-            background-color: #f9f9f9;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.2s;
-        }
-
-        .fila-grupo:hover {
-            background-color: #e0e0e0;
-        }
-
-        .icono-toggle {
-            float: right;
-            color: #666;
-            font-size: 0.9em;
-        }
-
-        .celda-vacia {
-            color: #aaa;
-            text-align: center;
-            width: 30px;
-        }
-        
-        .etiqueta-ubicacion {
-            font-size: 0.85em;
-            background-color: #eee;
-            padding: 3px 6px;
-            border-radius: 3px;
-            color: #555;
-        }
-
-        .acciones {
-            display: flex;
-            gap: 5px;
-        }
-
-        .sin-stock {
-            color: #777;
-            font-style: italic;
-        }
-
-        /* Estilos de la ventana flotante (Modal) */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-content {
-            background-color: #fff;
-            padding: 25px;
-            border: 1px solid #888;
-            width: 90%;
-            max-width: 350px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-            position: relative;
-        }
-
-        .modal-content h3 {
-            margin-top: 0;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-
-        .close-btn {
-            position: absolute;
-            top: 10px;
-            right: 15px;
-            color: #aaa;
-            font-size: 24px;
-            font-weight: bold;
-            cursor: pointer;
-        }
-
-        .close-btn:hover {
-            color: #333;
-        }
-
-        .modal-form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .modal-form-group input {
-            padding: 8px;
-            border: 1px solid #aaa;
-        }
-
-        .fecha-venta {
-            font-size: 0.9em;
-            color: #555;
-        }
+      /* Loader de carga */
+      #loader {
+        text-align: center;
+        color: #888;
+        font-style: italic;
+        margin-bottom: 15px;
+      }
     </style>
-</head>
-<body>
-
+  </head>
+  <body>
     <div class="container">
-        <h2>Control por Ubicación</h2>
-        <table class="tabla-pequena">
-            <thead>
-                <tr>
-                    <th>Lugar / Persona</th>
-                    <th>Total Camisas (Stock)</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-resumen-ubicaciones">
-                </tbody>
-        </table>
+      <h2>Control por Ubicación</h2>
+      <div id="loader">Cargando base de datos...</div>
+      <table class="tabla-pequena">
+        <thead>
+          <tr>
+            <th>Lugar / Persona</th>
+            <th>Total Camisas (Stock)</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-resumen-ubicaciones"></tbody>
+      </table>
     </div>
 
     <div class="container">
-        <h1>Inventario de Camisas Deportivas</h1>
-        
-        <h2>Agregar Nueva Camisa</h2>
-        <form id="formulario-inventario" class="form-group">
-            <input type="text" id="equipo" placeholder="Equipo / Modelo" required>
-            <select id="talla" required>
-                <option value="" disabled selected>Talla</option>
-                <option value="S">S</option>
-                <option value="M">M</option>
-                <option value="L">L</option>
-                <option value="XL">XL</option>
-            </select>
-            <input type="text" id="ubicacion" placeholder="Ubicación (Ej: Casa Juan)" required>
-            <input type="number" id="cantidad" placeholder="Cantidad" min="1" required>
-            <input type="number" id="precio" placeholder="Precio ($)" step="0.01" min="0" required>
-            <button type="submit">Guardar</button>
-        </form>
+      <h1>Inventario de Camisas Deportivas</h1>
 
-        <h2>Listado de Stock</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Equipo / Modelo</th>
-                    <th>Talla</th>
-                    <th>Ubicación</th>
-                    <th>Stock</th>
-                    <th>Precio</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-inventario">
-                </tbody>
-        </table>
+      <h2>Agregar Nueva Camisa</h2>
+      <form id="formulario-inventario" class="form-group">
+        <input type="text" id="equipo" placeholder="Equipo / Modelo" required="" />
+        <select id="talla" required="">
+          <option value="" disabled="" selected="">Talla</option>
+          <option value="S">S</option>
+          <option value="M">M</option>
+          <option value="L">L</option>
+          <option value="XL">XL</option>
+        </select>
+        <input type="text" id="ubicacion" placeholder="Ubicación (Ej: Casa Juan)" required="" />
+        <input type="number" id="cantidad" placeholder="Cantidad" min="1" required="" />
+        <input type="number" id="precio" placeholder="Precio ($)" step="0.01" min="0" required="" />
+        <button type="submit" id="btn-guardar">Guardar</button>
+      </form>
+
+      <h2>Listado de Stock</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Equipo / Modelo</th>
+            <th>Talla</th>
+            <th>Ubicación</th>
+            <th>Stock</th>
+            <th>Precio</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-inventario"></tbody>
+      </table>
     </div>
 
     <div class="container">
-        <h2>Historial de Ventas</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Fecha y Hora</th>
-                    <th>Modelo y Ubicación</th>
-                    <th>Talla</th>
-                    <th>Cant. Vendida</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-historial">
-                </tbody>
-        </table>
-        <button class="btn-limpiar" onclick="limpiarHistorial()">Limpiar Historial</button>
+      <h2>Historial de Ventas</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Fecha y Hora</th>
+            <th>Modelo y Ubicación</th>
+            <th>Talla</th>
+            <th>Cant. Vendida</th>
+          </tr>
+        </thead>
+        <tbody id="tabla-historial"></tbody>
+      </table>
+      <button class="btn-limpiar" onclick="limpiarHistorial()">Limpiar Historial</button>
     </div>
 
     <div id="modal-venta" class="modal-overlay">
-        <div class="modal-content">
-            <span class="close-btn" onclick="cerrarModal()">&times;</span>
-            <h3>Registrar Venta</h3>
-            <p id="info-producto-venta" style="font-weight: bold; margin-bottom: 5px;"></p>
-            <p id="info-stock-venta" style="margin-top: 0; font-size: 0.9em; color: #555;"></p>
-            
-            <div class="modal-form-group">
-                <label for="cantidad-vender">Cantidad a vender:</label>
-                <input type="number" id="cantidad-vender" min="1" value="1">
-                <button onclick="confirmarVenta()">Confirmar Venta</button>
-            </div>
+      <div class="modal-content">
+        <span class="close-btn" onclick="cerrarModal()">×</span>
+        <h3>Registrar Venta</h3>
+        <p id="info-producto-venta" style="font-weight: bold; margin-bottom: 5px"></p>
+        <p id="info-stock-venta" style="margin-top: 0; font-size: 0.9em; color: #555"></p>
+
+        <div class="modal-form-group">
+          <label for="cantidad-vender">Cantidad a vender:</label>
+          <input type="number" id="cantidad-vender" min="1" value="1" />
+          <button onclick="confirmarVenta()" id="btn-confirmar-venta">Confirmar Venta</button>
         </div>
+      </div>
     </div>
 
     <script>
-        // Inicializar datos (Con compatibilidad para datos viejos sin ubicación)
-        let inventario = JSON.parse(localStorage.getItem('inventarioCamisas')) || [];
-        let historialVentas = JSON.parse(localStorage.getItem('historialVentasCamisas')) || [];
-        let idProductoEnVenta = null;
-        let estadoPestanas = {}; 
+      // --- 1. CONFIGURACIÓN DE SUPABASE ---
+      const SUPABASE_URL = "https://efbvjugzwhrgwuqmxxqc.supabase.co/rest/v1/"; // REEMPLAZA ESTO
+      const SUPABASE_ANON_KEY =
+        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVmYnZqdWd6d2hyZ3d1cW14eHFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1NzgxMzIsImV4cCI6MjA5NTE1NDEzMn0.vMVCIDBimR4HBVNDz1NO7ZwbponrnMqH6Ug1DZgefRA"; // REEMPLAZA ESTO
 
-        const formulario = document.getElementById('formulario-inventario');
-        const tablaInventario = document.getElementById('tabla-inventario');
-        const tablaHistorial = document.getElementById('tabla-historial');
-        const tablaResumen = document.getElementById('tabla-resumen-ubicaciones');
-        const modalVenta = document.getElementById('modal-venta');
+      const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Función para actualizar el panel superior de ubicaciones
-        function actualizarResumenUbicaciones() {
-            tablaResumen.innerHTML = '';
-            const conteoPorUbicacion = {};
+      // --- ESTADO LOCAL ---
+      let inventario = [];
+      let historialVentas = [];
+      let idProductoEnVenta = null;
+      const estadoPestanas = {};
 
-            inventario.forEach(item => {
-                // Si hay datos viejos sin ubicación, les ponemos "No especificada"
-                const ubi = item.ubicacion || 'No especificada';
-                if (!conteoPorUbicacion[ubi]) {
-                    conteoPorUbicacion[ubi] = 0;
-                }
-                conteoPorUbicacion[ubi] += item.cantidad;
-            });
+      // Elementos del DOM
+      const formulario = document.getElementById("formulario-inventario");
+      const tablaInventario = document.getElementById("tabla-inventario");
+      const tablaHistorial = document.getElementById("tabla-historial");
+      const tablaResumen = document.getElementById("tabla-resumen-ubicaciones");
+      const modalVenta = document.getElementById("modal-venta");
+      const loader = document.getElementById("loader");
 
-            const ubicaciones = Object.keys(conteoPorUbicacion);
+      // --- 2. FUNCIONES DE BASE DE DATOS (CRUD) ---
 
-            if (ubicaciones.length === 0) {
-                tablaResumen.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#888;">Agrega camisas para ver el resumen aquí</td></tr>';
-                return;
-            }
+      // Leer datos iniciales
+      const cargarDatos = async () => {
+        try {
+          // Descargar inventario
+          const { data: invData, error: invErr } = await supabase.from("inventario").select("*");
+          if (invErr) throw invErr;
+          inventario = invData || [];
 
-            ubicaciones.forEach(ubi => {
-                const fila = document.createElement('tr');
-                fila.innerHTML = `
-                    <td><strong>${ubi}</strong></td>
-                    <td>${conteoPorUbicacion[ubi]}</td>
-                `;
-                tablaResumen.appendChild(fila);
-            });
+          // Descargar historial
+          const { data: histData, error: histErr } = await supabase
+            .from("historial_ventas")
+            .select("*")
+            .order("id", { ascending: false });
+          if (histErr) throw histErr;
+          historialVentas = histData || [];
+
+          actualizarTodasLasTablas();
+          loader.style.display = "none"; // Ocultar mensaje de carga
+        } catch (error) {
+          console.error("Error cargando datos:", error);
+          alert("Hubo un error al conectar con la base de datos.");
         }
+      };
 
-        function togglePestana(claveGrupo) {
-            estadoPestanas[claveGrupo] = !estadoPestanas[claveGrupo];
-            actualizarTablaInventario();
-        }
+      // --- 3. RENDERIZADO DE LA INTERFAZ ---
 
-        // Función para mostrar el inventario agrupado en pestañas
-        function actualizarTablaInventario() {
-            tablaInventario.innerHTML = ''; 
-
-            if (inventario.length === 0) {
-                tablaInventario.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay camisas en el inventario.</td></tr>';
-                return;
-            }
-
-            const inventarioAgrupado = {};
-            
-            inventario.forEach(item => {
-                const claveGrupo = item.equipo.toUpperCase().trim();
-                if (!inventarioAgrupado[claveGrupo]) {
-                    inventarioAgrupado[claveGrupo] = {
-                        nombreMostrar: item.equipo,
-                        items: []
-                    };
-                }
-                inventarioAgrupado[claveGrupo].items.push(item);
-            });
-
-            for (const clave in inventarioAgrupado) {
-                const grupo = inventarioAgrupado[clave];
-                
-                if (estadoPestanas[clave] === undefined) {
-                    estadoPestanas[clave] = true;
-                }
-                const estaAbierta = estadoPestanas[clave];
-
-                // Fila Principal (La Pestaña) con colspan="6" ahora
-                const filaCabecera = document.createElement('tr');
-                filaCabecera.className = 'fila-grupo';
-                filaCabecera.onclick = () => togglePestana(clave);
-                
-                const icono = estaAbierta ? '▼' : '▶';
-
-                filaCabecera.innerHTML = `
-                    <td colspan="6">
-                        ${grupo.nombreMostrar}
-                        <span class="icono-toggle">${icono}</span>
-                    </td>
-                `;
-                tablaInventario.appendChild(filaCabecera);
-
-                if (estaAbierta) {
-                    grupo.items.forEach(item => {
-                        const fila = document.createElement('tr');
-                        const ubicacionTexto = item.ubicacion || 'No especificada';
-                        
-                        fila.innerHTML = `
-                            <td class="celda-vacia">↳</td>
-                            <td>${item.talla}</td>
-                            <td><span class="etiqueta-ubicacion">${ubicacionTexto}</span></td>
-                            <td class="${item.cantidad === 0 ? 'sin-stock' : ''}"><strong>${item.cantidad}</strong></td>
-                            <td>$${item.precio}</td>
-                            <td class="acciones">
-                                <button class="btn-vender" onclick="abrirModalVenta(${item.id})" ${item.cantidad === 0 ? 'disabled' : ''}>Vender</button>
-                                <button class="btn-eliminar" onclick="eliminarArticulo(${item.id})">Eliminar</button>
-                            </td>
-                        `;
-                        tablaInventario.appendChild(fila);
-                    });
-                }
-            }
-        }
-
-        function actualizarTablaHistorial() {
-            tablaHistorial.innerHTML = '';
-            if (historialVentas.length === 0) {
-                tablaHistorial.innerHTML = '<tr><td colspan="4" style="text-align:center;">No se han registrado ventas aún.</td></tr>';
-                return;
-            }
-            const ventasInvertidas = [...historialVentas].reverse();
-            ventasInvertidas.forEach(venta => {
-                const fila = document.createElement('tr');
-                const ubi = venta.ubicacion ? ` <span style="font-size:0.8em; color:#777;">(${venta.ubicacion})</span>` : '';
-                fila.innerHTML = `
-                    <td class="fecha-venta">${venta.fecha}</td>
-                    <td>${venta.equipo}${ubi}</td>
-                    <td>${venta.talla}</td>
-                    <td><strong>${venta.cantidadVendida}</strong></td>
-                `;
-                tablaHistorial.appendChild(fila);
-            });
-        }
-
-        function guardarInventario() {
-            localStorage.setItem('inventarioCamisas', JSON.stringify(inventario));
-            actualizarTablaInventario();
-            actualizarResumenUbicaciones(); // Actualizar el panel superior también
-        }
-
-        function guardarHistorial() {
-            localStorage.setItem('historialVentasCamisas', JSON.stringify(historialVentas));
-            actualizarTablaHistorial();
-        }
-
-        formulario.addEventListener('submit', function(e) {
-            e.preventDefault(); 
-            const equipo = document.getElementById('equipo').value.trim();
-            const talla = document.getElementById('talla').value;
-            const ubicacion = document.getElementById('ubicacion').value.trim();
-            const cantidad = parseInt(document.getElementById('cantidad').value);
-            const precio = parseFloat(document.getElementById('precio').value).toFixed(2);
-
-            const nuevoArticulo = {
-                id: Date.now(), 
-                equipo: equipo,
-                talla: talla,
-                ubicacion: ubicacion, // Se guarda la ubicación
-                cantidad: cantidad,
-                precio: precio
-            };
-
-            const claveGrupo = equipo.toUpperCase().trim();
-            estadoPestanas[claveGrupo] = true;
-
-            inventario.push(nuevoArticulo);
-            guardarInventario();
-            
-            // Limpiar todo menos el equipo y ubicación para agregar más rápido
-            document.getElementById('talla').value = '';
-            document.getElementById('cantidad').value = '';
-        });
-
-        function eliminarArticulo(id) {
-            if(confirm("¿Estás seguro de que deseas eliminar este registro del inventario?")) {
-                inventario = inventario.filter(item => item.id !== id);
-                guardarInventario();
-            }
-        }
-
-        // --- LÓGICA DEL MODAL DE VENTAS ---
-        function abrirModalVenta(id) {
-            const producto = inventario.find(item => item.id === id);
-            if (producto) {
-                idProductoEnVenta = id;
-                const ubi = producto.ubicacion || 'No especificada';
-                document.getElementById('info-producto-venta').innerText = `${producto.equipo} - Talla ${producto.talla} (en ${ubi})`;
-                document.getElementById('info-stock-venta').innerText = `Stock disponible: ${producto.cantidad} unidades`;
-                
-                const inputCantidad = document.getElementById('cantidad-vender');
-                inputCantidad.value = 1;
-                inputCantidad.max = producto.cantidad;
-
-                modalVenta.style.display = 'flex';
-            }
-        }
-
-        function cerrarModal() {
-            modalVenta.style.display = 'none';
-            idProductoEnVenta = null;
-        }
-
-        function confirmarVenta() {
-            const cantidadAVender = parseInt(document.getElementById('cantidad-vender').value);
-            const index = inventario.findIndex(item => item.id === idProductoEnVenta);
-
-            if (index !== -1) {
-                const producto = inventario[index];
-                if (cantidadAVender > 0 && cantidadAVender <= producto.cantidad) {
-                    producto.cantidad -= cantidadAVender; 
-                    guardarInventario();
-
-                    const fechaActual = new Date();
-                    const nuevaVenta = {
-                        idVenta: Date.now(),
-                        equipo: producto.equipo,
-                        talla: producto.talla,
-                        ubicacion: producto.ubicacion,
-                        cantidadVendida: cantidadAVender,
-                        fecha: fechaActual.toLocaleDateString() + ' ' + fechaActual.toLocaleTimeString()
-                    };
-                    
-                    historialVentas.push(nuevaVenta);
-                    guardarHistorial();
-                    cerrarModal();
-                } else {
-                    alert("Cantidad no válida. Revisa el stock disponible.");
-                }
-            }
-        }
-
-        function limpiarHistorial() {
-            if(confirm("¿Estás seguro de borrar todo el historial de ventas?")) {
-                historialVentas = [];
-                guardarHistorial();
-            }
-        }
-
-        window.onclick = function(event) {
-            if (event.target === modalVenta) {
-                cerrarModal();
-            }
-        }
-
-        // Inicializar todas las tablas
+      const actualizarTodasLasTablas = () => {
         actualizarResumenUbicaciones();
         actualizarTablaInventario();
         actualizarTablaHistorial();
+      };
+
+      const actualizarResumenUbicaciones = () => {
+        const conteo = inventario.reduce((acc, item) => {
+          const ubi = item.ubicacion || "No especificada";
+          acc[ubi] = (acc[ubi] || 0) + item.cantidad;
+          return acc;
+        }, {});
+
+        const ubicaciones = Object.entries(conteo);
+        if (ubicaciones.length === 0) {
+          tablaResumen.innerHTML =
+            '<tr><td colspan="2" style="text-align:center; color:#888;">Agrega camisas para ver el resumen</td></tr>';
+          return;
+        }
+
+        tablaResumen.innerHTML = ubicaciones
+          .map(
+            ([ubi, total]) => `
+                <tr><td><strong>${ubi}</strong></td><td>${total}</td></tr>
+            `,
+          )
+          .join("");
+      };
+
+      const togglePestana = (claveGrupo) => {
+        estadoPestanas[claveGrupo] = !estadoPestanas[claveGrupo];
+        actualizarTablaInventario();
+      };
+
+      const actualizarTablaInventario = () => {
+        if (inventario.length === 0) {
+          tablaInventario.innerHTML =
+            '<tr><td colspan="6" style="text-align:center;">No hay camisas en el inventario.</td></tr>';
+          return;
+        }
+
+        const inventarioAgrupado = inventario.reduce((acc, item) => {
+          const clave = item.equipo.toUpperCase().trim();
+          if (!acc[clave]) acc[clave] = { nombreMostrar: item.equipo, items: [] };
+          acc[clave].items.push(item);
+          return acc;
+        }, {});
+
+        tablaInventario.innerHTML = Object.entries(inventarioAgrupado)
+          .map(([clave, grupo]) => {
+            estadoPestanas[clave] = estadoPestanas[clave] ?? true;
+            const estaAbierta = estadoPestanas[clave];
+            const claveEscapada = clave.replace(/'/g, "\\'");
+
+            let html = `
+                    <tr class="fila-grupo" onclick="togglePestana('${claveEscapada}')">
+                        <td colspan="6">${grupo.nombreMostrar} <span class="icono-toggle">${estaAbierta ? "▼" : "▶"}</span></td>
+                    </tr>
+                `;
+
+            if (estaAbierta) {
+              html += grupo.items
+                .map(
+                  (item) => `
+                        <tr>
+                            <td class="celda-vacia">↳</td>
+                            <td>${item.talla}</td>
+                            <td><span class="etiqueta-ubicacion">${item.ubicacion || "No especificada"}</span></td>
+                            <td class="${item.cantidad === 0 ? "sin-stock" : ""}"><strong>${item.cantidad}</strong></td>
+                            <td>$${item.precio}</td>
+                            <td class="acciones">
+                                <button class="btn-vender" onclick="abrirModalVenta(${item.id})" ${item.cantidad === 0 ? "disabled" : ""}>Vender</button>
+                                <button class="btn-eliminar" onclick="eliminarArticulo(${item.id})">Eliminar</button>
+                            </td>
+                        </tr>
+                    `,
+                )
+                .join("");
+            }
+            return html;
+          })
+          .join("");
+      };
+
+      const actualizarTablaHistorial = () => {
+        if (historialVentas.length === 0) {
+          tablaHistorial.innerHTML =
+            '<tr><td colspan="4" style="text-align:center;">No se han registrado ventas aún.</td></tr>';
+          return;
+        }
+
+        tablaHistorial.innerHTML = historialVentas
+          .map(
+            (venta) => `
+                <tr>
+                    <td class="fecha-venta">${venta.fecha}</td>
+                    <td>${venta.equipo} ${venta.ubicacion ? `<span style="font-size:0.8em; color:#777;">(${venta.ubicacion})</span>` : ""}</td>
+                    <td>${venta.talla}</td>
+                    <td><strong>${venta.cantidadVendida}</strong></td>
+                </tr>
+            `,
+          )
+          .join("");
+      };
+
+      // --- 4. ACCIONES DEL USUARIO A LA BASE DE DATOS ---
+
+      // Agregar artículo
+      formulario.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById("btn-guardar");
+        btn.disabled = true;
+        btn.innerText = "Guardando...";
+
+        const equipo = document.getElementById("equipo").value.trim();
+        const talla = document.getElementById("talla").value;
+        const ubicacion = document.getElementById("ubicacion").value.trim();
+        const cantidad = parseInt(document.getElementById("cantidad").value, 10);
+        const precio = parseFloat(document.getElementById("precio").value).toFixed(2);
+
+        const nuevoItem = { equipo, talla, ubicacion, cantidad, precio };
+
+        try {
+          // Insertar en Supabase. Pedimos que devuelva el registro creado (.select()) para obtener el ID real
+          const { data, error } = await supabase.from("inventario").insert([nuevoItem]).select();
+          if (error) throw error;
+
+          // Actualizar estado local y UI
+          inventario.push(data[0]);
+          estadoPestanas[equipo.toUpperCase().trim()] = true;
+          actualizarTodasLasTablas();
+
+          // Limpiar inputs rápidos
+          document.getElementById("talla").value = "";
+          document.getElementById("cantidad").value = "";
+        } catch (error) {
+          console.error("Error al guardar:", error);
+          alert("Error al guardar en la base de datos.");
+        } finally {
+          btn.disabled = false;
+          btn.innerText = "Guardar";
+        }
+      });
+
+      // Eliminar artículo
+      const eliminarArticulo = async (id) => {
+        if (confirm("¿Estás seguro de que deseas eliminar este registro del inventario?")) {
+          try {
+            const { error } = await supabase.from("inventario").delete().eq("id", id);
+            if (error) throw error;
+
+            inventario = inventario.filter((item) => item.id !== id);
+            actualizarTodasLasTablas();
+          } catch (error) {
+            console.error("Error al eliminar:", error);
+            alert("Error al eliminar el registro.");
+          }
+        }
+      };
+
+      // Limpiar historial
+      const limpiarHistorial = async () => {
+        if (confirm("¿Estás seguro de borrar TODO el historial de ventas en la base de datos?")) {
+          try {
+            // Supabase requiere un filtro para hacer delete. Un hack común si no hay RLS es borrar donde id no es nulo
+            const { error } = await supabase.from("historial_ventas").delete().neq("id", 0);
+            if (error) throw error;
+
+            historialVentas = [];
+            actualizarTablaHistorial();
+          } catch (error) {
+            console.error("Error al limpiar historial:", error);
+            alert("Error al limpiar el historial.");
+          }
+        }
+      };
+
+      // --- 5. LÓGICA DE VENTAS (ACTUALIZAR STOCK E INSERTAR HISTORIAL) ---
+
+      const abrirModalVenta = (id) => {
+        const producto = inventario.find((item) => item.id === id);
+        if (!producto) return;
+
+        idProductoEnVenta = id;
+        document.getElementById("info-producto-venta").innerText =
+          `${producto.equipo} - Talla ${producto.talla} (en ${producto.ubicacion || "No especificada"})`;
+        document.getElementById("info-stock-venta").innerText = `Stock disponible: ${producto.cantidad} unidades`;
+
+        const inputCantidad = document.getElementById("cantidad-vender");
+        inputCantidad.value = 1;
+        inputCantidad.max = producto.cantidad;
+
+        modalVenta.style.display = "flex";
+      };
+
+      const cerrarModal = () => {
+        modalVenta.style.display = "none";
+        idProductoEnVenta = null;
+      };
+
+      const confirmarVenta = async () => {
+        const cantidadAVender = parseInt(document.getElementById("cantidad-vender").value, 10);
+        const producto = inventario.find((item) => item.id === idProductoEnVenta);
+        const btn = document.getElementById("btn-confirmar-venta");
+
+        if (producto && cantidadAVender > 0 && cantidadAVender <= producto.cantidad) {
+          btn.disabled = true;
+          btn.innerText = "Procesando...";
+
+          try {
+            const nuevaCantidad = producto.cantidad - cantidadAVender;
+
+            // 1. Actualizar el inventario en Supabase
+            const { error: errUpdate } = await supabase
+              .from("inventario")
+              .update({ cantidad: nuevaCantidad })
+              .eq("id", idProductoEnVenta);
+
+            if (errUpdate) throw errUpdate;
+
+            // 2. Crear el registro en el historial de Supabase
+            const fechaActual = new Date();
+            const nuevaVenta = {
+              equipo: producto.equipo,
+              talla: producto.talla,
+              ubicacion: producto.ubicacion,
+              cantidadVendida: cantidadAVender,
+              fecha: `${fechaActual.toLocaleDateString()} ${fechaActual.toLocaleTimeString()}`,
+            };
+
+            const { data: dataHistorial, error: errInsert } = await supabase
+              .from("historial_ventas")
+              .insert([nuevaVenta])
+              .select();
+
+            if (errInsert) throw errInsert;
+
+            // 3. Actualizar la interfaz local
+            producto.cantidad = nuevaCantidad;
+            historialVentas.unshift(dataHistorial[0]); // Añadir al inicio del array local
+
+            actualizarTodasLasTablas();
+            cerrarModal();
+          } catch (error) {
+            console.error("Error en la venta:", error);
+            alert("Error procesando la venta.");
+          } finally {
+            btn.disabled = false;
+            btn.innerText = "Confirmar Venta";
+          }
+        } else {
+          alert("Cantidad no válida. Revisa el stock disponible.");
+        }
+      };
+
+      window.onclick = (event) => {
+        if (event.target === modalVenta) cerrarModal();
+      };
+
+      // --- INICIALIZAR APP ---
+      cargarDatos();
     </script>
-</body>
+  </body>
 </html>
