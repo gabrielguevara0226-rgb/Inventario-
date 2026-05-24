@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control de Inventario - Camisas Deportivas</title>
+    <style>
+        /* Estilos generales minimalistas */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            background-color: #ffffff;
+            border: 1px solid #ccc;
+            padding: 20px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        h1, h2 {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        .form-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .form-group input, .form-group select {
+            padding: 8px;
+            border: 1px solid #aaa;
+            flex: 1;
+            min-width: 110px;
+        }
+
+        button {
+            padding: 8px 15px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #555;
+        }
+
+        button.btn-vender {
+            background-color: #666;
+            font-size: 0.9em;
+        }
+
+        button.btn-eliminar {
+            background-color: #999;
+            font-size: 0.9em;
+        }
+
+        button.btn-limpiar {
+            background-color: #fff;
+            color: #333;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+            font-size: 0.85em;
+        }
+
+        button.btn-limpiar:hover {
+            background-color: #eee;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            background-color: #eaeaea;
+        }
+
+        /* Tabla resumen superior */
+        .tabla-pequena {
+            width: 50%;
+            min-width: 300px;
+            margin-bottom: 10px;
+        }
+
+        /* Estilos para el Acordeón / Pestañas */
+        .fila-grupo {
+            background-color: #f9f9f9;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+
+        .fila-grupo:hover {
+            background-color: #e0e0e0;
+        }
+
+        .icono-toggle {
+            float: right;
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .celda-vacia {
+            color: #aaa;
+            text-align: center;
+            width: 30px;
+        }
+        
+        .etiqueta-ubicacion {
+            font-size: 0.85em;
+            background-color: #eee;
+            padding: 3px 6px;
+            border-radius: 3px;
+            color: #555;
+        }
+
+        .acciones {
+            display: flex;
+            gap: 5px;
+        }
+
+        .sin-stock {
+            color: #777;
+            font-style: italic;
+        }
+
+        /* Estilos de la ventana flotante (Modal) */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fff;
+            padding: 25px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 350px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            color: #aaa;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .modal-form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .modal-form-group input {
+            padding: 8px;
+            border: 1px solid #aaa;
+        }
+
+        .fecha-venta {
+            font-size: 0.9em;
+            color: #555;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>Control por Ubicación</h2>
+        <table class="tabla-pequena">
+            <thead>
+                <tr>
+                    <th>Lugar / Persona</th>
+                    <th>Total Camisas (Stock)</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-resumen-ubicaciones">
+                </tbody>
+        </table>
+    </div>
+
+    <div class="container">
+        <h1>Inventario de Camisas Deportivas</h1>
+        
+        <h2>Agregar Nueva Camisa</h2>
+        <form id="formulario-inventario" class="form-group">
+            <input type="text" id="equipo" placeholder="Equipo / Modelo" required>
+            <select id="talla" required>
+                <option value="" disabled selected>Talla</option>
+                <option value="S">S</option>
+                <option value="M">M</option>
+                <option value="L">L</option>
+                <option value="XL">XL</option>
+            </select>
+            <input type="text" id="ubicacion" placeholder="Ubicación (Ej: Casa Juan)" required>
+            <input type="number" id="cantidad" placeholder="Cantidad" min="1" required>
+            <input type="number" id="precio" placeholder="Precio ($)" step="0.01" min="0" required>
+            <button type="submit">Guardar</button>
+        </form>
+
+        <h2>Listado de Stock</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Equipo / Modelo</th>
+                    <th>Talla</th>
+                    <th>Ubicación</th>
+                    <th>Stock</th>
+                    <th>Precio</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-inventario">
+                </tbody>
+        </table>
+    </div>
+
+    <div class="container">
+        <h2>Historial de Ventas</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha y Hora</th>
+                    <th>Modelo y Ubicación</th>
+                    <th>Talla</th>
+                    <th>Cant. Vendida</th>
+                </tr>
+            </thead>
+            <tbody id="tabla-historial">
+                </tbody>
+        </table>
+        <button class="btn-limpiar" onclick="limpiarHistorial()">Limpiar Historial</button>
+    </div>
+
+    <div id="modal-venta" class="modal-overlay">
+        <div class="modal-content">
+            <span class="close-btn" onclick="cerrarModal()">&times;</span>
+            <h3>Registrar Venta</h3>
+            <p id="info-producto-venta" style="font-weight: bold; margin-bottom: 5px;"></p>
+            <p id="info-stock-venta" style="margin-top: 0; font-size: 0.9em; color: #555;"></p>
+            
+            <div class="modal-form-group">
+                <label for="cantidad-vender">Cantidad a vender:</label>
+                <input type="number" id="cantidad-vender" min="1" value="1">
+                <button onclick="confirmarVenta()">Confirmar Venta</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Inicializar datos (Con compatibilidad para datos viejos sin ubicación)
+        let inventario = JSON.parse(localStorage.getItem('inventarioCamisas')) || [];
+        let historialVentas = JSON.parse(localStorage.getItem('historialVentasCamisas')) || [];
+        let idProductoEnVenta = null;
+        let estadoPestanas = {}; 
+
+        const formulario = document.getElementById('formulario-inventario');
+        const tablaInventario = document.getElementById('tabla-inventario');
+        const tablaHistorial = document.getElementById('tabla-historial');
+        const tablaResumen = document.getElementById('tabla-resumen-ubicaciones');
+        const modalVenta = document.getElementById('modal-venta');
+
+        // Función para actualizar el panel superior de ubicaciones
+        function actualizarResumenUbicaciones() {
+            tablaResumen.innerHTML = '';
+            const conteoPorUbicacion = {};
+
+            inventario.forEach(item => {
+                // Si hay datos viejos sin ubicación, les ponemos "No especificada"
+                const ubi = item.ubicacion || 'No especificada';
+                if (!conteoPorUbicacion[ubi]) {
+                    conteoPorUbicacion[ubi] = 0;
+                }
+                conteoPorUbicacion[ubi] += item.cantidad;
+            });
+
+            const ubicaciones = Object.keys(conteoPorUbicacion);
+
+            if (ubicaciones.length === 0) {
+                tablaResumen.innerHTML = '<tr><td colspan="2" style="text-align:center; color:#888;">Agrega camisas para ver el resumen aquí</td></tr>';
+                return;
+            }
+
+            ubicaciones.forEach(ubi => {
+                const fila = document.createElement('tr');
+                fila.innerHTML = `
+                    <td><strong>${ubi}</strong></td>
+                    <td>${conteoPorUbicacion[ubi]}</td>
+                `;
+                tablaResumen.appendChild(fila);
+            });
+        }
+
+        function togglePestana(claveGrupo) {
+            estadoPestanas[claveGrupo] = !estadoPestanas[claveGrupo];
+            actualizarTablaInventario();
+        }
+
+        // Función para mostrar el inventario agrupado en pestañas
+        function actualizarTablaInventario() {
+            tablaInventario.innerHTML = ''; 
+
+            if (inventario.length === 0) {
+                tablaInventario.innerHTML = '<tr><td colspan="6" style="text-align:center;">No hay camisas en el inventario.</td></tr>';
+                return;
+            }
+
+            const inventarioAgrupado = {};
+            
+            inventario.forEach(item => {
+                const claveGrupo = item.equipo.toUpperCase().trim();
+                if (!inventarioAgrupado[claveGrupo]) {
+                    inventarioAgrupado[claveGrupo] = {
+                        nombreMostrar: item.equipo,
+                        items: []
+                    };
+                }
+                inventarioAgrupado[claveGrupo].items.push(item);
+            });
+
+            for (const clave in inventarioAgrupado) {
+                const grupo = inventarioAgrupado[clave];
+                
+                if (estadoPestanas[clave] === undefined) {
+                    estadoPestanas[clave] = true;
+                }
+                const estaAbierta = estadoPestanas[clave];
+
+                // Fila Principal (La Pestaña) con colspan="6" ahora
+                const filaCabecera = document.createElement('tr');
+                filaCabecera.className = 'fila-grupo';
+                filaCabecera.onclick = () => togglePestana(clave);
+                
+                const icono = estaAbierta ? '▼' : '▶';
+
+                filaCabecera.innerHTML = `
+                    <td colspan="6">
+                        ${grupo.nombreMostrar}
+                        <span class="icono-toggle">${icono}</span>
+                    </td>
+                `;
+                tablaInventario.appendChild(filaCabecera);
+
+                if (estaAbierta) {
+                    grupo.items.forEach(item => {
+                        const fila = document.createElement('tr');
+                        const ubicacionTexto = item.ubicacion || 'No especificada';
+                        
+                        fila.innerHTML = `
+                            <td class="celda-vacia">↳</td>
+                            <td>${item.talla}</td>
+                            <td><span class="etiqueta-ubicacion">${ubicacionTexto}</span></td>
+                            <td class="${item.cantidad === 0 ? 'sin-stock' : ''}"><strong>${item.cantidad}</strong></td>
+                            <td>$${item.precio}</td>
+                            <td class="acciones">
+                                <button class="btn-vender" onclick="abrirModalVenta(${item.id})" ${item.cantidad === 0 ? 'disabled' : ''}>Vender</button>
+                                <button class="btn-eliminar" onclick="eliminarArticulo(${item.id})">Eliminar</button>
+                            </td>
+                        `;
+                        tablaInventario.appendChild(fila);
+                    });
+                }
+            }
+        }
+
+        function actualizarTablaHistorial() {
+            tablaHistorial.innerHTML = '';
+            if (historialVentas.length === 0) {
+                tablaHistorial.innerHTML = '<tr><td colspan="4" style="text-align:center;">No se han registrado ventas aún.</td></tr>';
+                return;
+            }
+            const ventasInvertidas = [...historialVentas].reverse();
+            ventasInvertidas.forEach(venta => {
+                const fila = document.createElement('tr');
+                const ubi = venta.ubicacion ? ` <span style="font-size:0.8em; color:#777;">(${venta.ubicacion})</span>` : '';
+                fila.innerHTML = `
+                    <td class="fecha-venta">${venta.fecha}</td>
+                    <td>${venta.equipo}${ubi}</td>
+                    <td>${venta.talla}</td>
+                    <td><strong>${venta.cantidadVendida}</strong></td>
+                `;
+                tablaHistorial.appendChild(fila);
+            });
+        }
+
+        function guardarInventario() {
+            localStorage.setItem('inventarioCamisas', JSON.stringify(inventario));
+            actualizarTablaInventario();
+            actualizarResumenUbicaciones(); // Actualizar el panel superior también
+        }
+
+        function guardarHistorial() {
+            localStorage.setItem('historialVentasCamisas', JSON.stringify(historialVentas));
+            actualizarTablaHistorial();
+        }
+
+        formulario.addEventListener('submit', function(e) {
+            e.preventDefault(); 
+            const equipo = document.getElementById('equipo').value.trim();
+            const talla = document.getElementById('talla').value;
+            const ubicacion = document.getElementById('ubicacion').value.trim();
+            const cantidad = parseInt(document.getElementById('cantidad').value);
+            const precio = parseFloat(document.getElementById('precio').value).toFixed(2);
+
+            const nuevoArticulo = {
+                id: Date.now(), 
+                equipo: equipo,
+                talla: talla,
+                ubicacion: ubicacion, // Se guarda la ubicación
+                cantidad: cantidad,
+                precio: precio
+            };
+
+            const claveGrupo = equipo.toUpperCase().trim();
+            estadoPestanas[claveGrupo] = true;
+
+            inventario.push(nuevoArticulo);
+            guardarInventario();
+            
+            // Limpiar todo menos el equipo y ubicación para agregar más rápido
+            document.getElementById('talla').value = '';
+            document.getElementById('cantidad').value = '';
+        });
+
+        function eliminarArticulo(id) {
+            if(confirm("¿Estás seguro de que deseas eliminar este registro del inventario?")) {
+                inventario = inventario.filter(item => item.id !== id);
+                guardarInventario();
+            }
+        }
+
+        // --- LÓGICA DEL MODAL DE VENTAS ---
+        function abrirModalVenta(id) {
+            const producto = inventario.find(item => item.id === id);
+            if (producto) {
+                idProductoEnVenta = id;
+                const ubi = producto.ubicacion || 'No especificada';
+                document.getElementById('info-producto-venta').innerText = `${producto.equipo} - Talla ${producto.talla} (en ${ubi})`;
+                document.getElementById('info-stock-venta').innerText = `Stock disponible: ${producto.cantidad} unidades`;
+                
+                const inputCantidad = document.getElementById('cantidad-vender');
+                inputCantidad.value = 1;
+                inputCantidad.max = producto.cantidad;
+
+                modalVenta.style.display = 'flex';
+            }
+        }
+
+        function cerrarModal() {
+            modalVenta.style.display = 'none';
+            idProductoEnVenta = null;
+        }
+
+        function confirmarVenta() {
+            const cantidadAVender = parseInt(document.getElementById('cantidad-vender').value);
+            const index = inventario.findIndex(item => item.id === idProductoEnVenta);
+
+            if (index !== -1) {
+                const producto = inventario[index];
+                if (cantidadAVender > 0 && cantidadAVender <= producto.cantidad) {
+                    producto.cantidad -= cantidadAVender; 
+                    guardarInventario();
+
+                    const fechaActual = new Date();
+                    const nuevaVenta = {
+                        idVenta: Date.now(),
+                        equipo: producto.equipo,
+                        talla: producto.talla,
+                        ubicacion: producto.ubicacion,
+                        cantidadVendida: cantidadAVender,
+                        fecha: fechaActual.toLocaleDateString() + ' ' + fechaActual.toLocaleTimeString()
+                    };
+                    
+                    historialVentas.push(nuevaVenta);
+                    guardarHistorial();
+                    cerrarModal();
+                } else {
+                    alert("Cantidad no válida. Revisa el stock disponible.");
+                }
+            }
+        }
+
+        function limpiarHistorial() {
+            if(confirm("¿Estás seguro de borrar todo el historial de ventas?")) {
+                historialVentas = [];
+                guardarHistorial();
+            }
+        }
+
+        window.onclick = function(event) {
+            if (event.target === modalVenta) {
+                cerrarModal();
+            }
+        }
+
+        // Inicializar todas las tablas
+        actualizarResumenUbicaciones();
+        actualizarTablaInventario();
+        actualizarTablaHistorial();
+    </script>
+</body>
+</html>
